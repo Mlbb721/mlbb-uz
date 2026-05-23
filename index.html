@@ -548,5 +548,90 @@ document.getElementById('modalBg').addEventListener('click',e=>{if(e.target===do
 setInterval(()=>{const now=Date.now();const b=allCards.length;allCards=allCards.filter(c=>c.expires>now);if(allCards.length!==b){updateStats();applyFilter();}},60000);
 updateStats();renderCards(allCards);
 </script>
+
+<!-- FIREBASE -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCTcF7em6YHC6mdAPF0uB8UZO78optj6_M",
+  authDomain: "mlbb-uz.firebaseapp.com",
+  projectId: "mlbb-uz",
+  storageBucket: "mlbb-uz.firebasestorage.app",
+  messagingSenderId: "1081347780237",
+  appId: "1:1081347780237:web:72f6484aedd430f7a2bcc4"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const colRef = collection(db, "elonlar");
+
+// Real-time — yangi e'lon qo'shilsa avtomatik yangilanadi
+const q = query(colRef, orderBy("createdAt", "desc"));
+onSnapshot(q, (snapshot) => {
+  const now = Date.now();
+  allCards = snapshot.docs
+    .map(d => ({ ...d.data(), _id: d.id }))
+    .filter(c => c.expires > now);
+  updateStats();
+  applyFilter();
+});
+
+// E'lon joylash
+window.doPost = async function() {
+  const nick = document.getElementById('fNick').value.trim();
+  if(!nick){ toast('❌ Nickname kiriting!'); return; }
+  if(!selRoles.length){ toast('❌ Kamida 1 rol tanlang!'); return; }
+  const wr = document.getElementById('fWr').value;
+  if(wr && (parseInt(wr)<0||parseInt(wr)>100)){ toast("❌ Win rate 0-100 oralig'ida bo'lsin!"); return; }
+
+  const card = {
+    nick, rank: document.getElementById('fRank').value,
+    roles: [...selRoles],
+    desc: document.getElementById('fDesc').value.trim(),
+    need: document.getElementById('fNeed').value,
+    contact: document.getElementById('fContact').value.trim() || "Ko'rsatilmagan",
+    city: document.getElementById('fCity').value,
+    time: document.getElementById('fTime').value,
+    hero: document.getElementById('fHero').value.trim(),
+    wr: wr || '',
+    lang: document.getElementById('fLang').value,
+    online: true,
+    expires: Date.now() + 7*24*60*60*1000,
+    owner: SESSION_ID,
+    createdAt: Date.now()
+  };
+
+  const btn = document.querySelector('.submit-btn');
+  btn.textContent = "Yuklanmoqda...";
+  btn.disabled = true;
+
+  try {
+    await addDoc(colRef, card);
+    ['fNick','fContact','fDesc','fHero','fWr'].forEach(id => document.getElementById(id).value='');
+    selRoles = [];
+    document.querySelectorAll('.rp-btn').forEach(b => b.className='rp-btn');
+    toast("✅ E'lon joylashtirildi! 7 kun ko'rinadi.");
+    showTab('find');
+  } catch(e) {
+    toast("❌ Xato yuz berdi, qayta urinib ko'ring!");
+    console.error(e);
+  }
+  btn.textContent = "E'lon Joylash →";
+  btn.disabled = false;
+};
+
+// E'lon o'chirish
+window.doDelete = async function() {
+  const i = parseInt(document.getElementById('mDelBtn').dataset.idx);
+  const c = allCards[i];
+  if(c && c._id) {
+    try { await deleteDoc(doc(db, "elonlar", c._id)); } catch(e){ console.error(e); }
+  }
+  closeModal();
+  toast("🗑 E'lon o'chirildi.");
+};
+</script>
 </body>
 </html>
