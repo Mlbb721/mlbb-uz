@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MLBB UZ — Jamoa Topish</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#060810;--bg2:#0b0f1a;--bg3:#111827;--glass:rgba(255,255,255,0.04);--glass2:rgba(255,255,255,0.07);--border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);--cyan:#00e5ff;--cyan2:#00b8d4;--gold:#ffc400;--gold2:#ff8f00;--red:#ff1744;--green:#00e676;--purple:#d500f9;--text:#eef0f8;--text2:#8892a4;--text3:#5a6478;}
@@ -547,6 +548,45 @@ function updateStats(){const now=Date.now();const v=allCards.filter(c=>c.expires
 document.getElementById('modalBg').addEventListener('click',e=>{if(e.target===document.getElementById('modalBg'))closeModal();});
 setInterval(()=>{const now=Date.now();const b=allCards.length;allCards=allCards.filter(c=>c.expires>now);if(allCards.length!==b){updateStats();applyFilter();}},60000);
 updateStats();renderCards(allCards);
+
+// ── TELEGRAM MINI APP ──
+const tg = window.Telegram && window.Telegram.WebApp;
+if(tg) {
+  tg.ready();
+  tg.expand();
+  // Telegram rangiga moslashtirish
+  document.documentElement.style.setProperty('--bg', '#060810');
+  // Telegram user ma'lumotlari
+  const tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user;
+  if(tgUser) {
+    // Nickname maydonini Telegram username bilan to'ldirish
+    const nickField = document.getElementById('fNick');
+    if(nickField && !nickField.value) {
+      nickField.value = tgUser.username || tgUser.first_name || '';
+    }
+  }
+  // Back button
+  tg.BackButton.onClick(() => {
+    if(document.getElementById('tabPost').style.display !== 'none' ||
+       document.getElementById('tabSuggest').style.display !== 'none') {
+      showTab('find');
+    } else {
+      tg.close();
+    }
+  });
+  // Tab o'zgarganda back button ko'rsatish
+  const origShowTab = showTab;
+  window.showTab = function(name) {
+    origShowTab(name);
+    if(name !== 'find') tg.BackButton.show();
+    else tg.BackButton.hide();
+  };
+  // Main button - E'lon berish
+  tg.MainButton.setText("+ E'LON BERISH");
+  tg.MainButton.show();
+  tg.MainButton.onClick(() => showTab('post'));
+}
+
 </script>
 
 <!-- FIREBASE -->
